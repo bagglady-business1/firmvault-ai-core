@@ -23,16 +23,17 @@ export function isUsingSupabase(): boolean {
  * If Supabase is unavailable, or the query throws, we log a
  * warning and return the provided mock value — never crash the UI.
  */
-export async function withFallback<T>(
+export async function withFallback<T, M = T>(
   supabaseCall: () => Promise<T>,
-  mockValue: T | (() => T | Promise<T>),
+  mockValue: M | (() => M | Promise<M>),
   context = "query",
-): Promise<T> {
-  if (!isUsingSupabase()) {
-    return typeof mockValue === "function"
-      ? await (mockValue as () => T | Promise<T>)()
+): Promise<T | M> {
+  const resolveMock = async (): Promise<M> =>
+    typeof mockValue === "function"
+      ? await (mockValue as () => M | Promise<M>)()
       : mockValue;
-  }
+
+  if (!isUsingSupabase()) return resolveMock();
   try {
     return await supabaseCall();
   } catch (err) {
@@ -41,8 +42,6 @@ export async function withFallback<T>(
       `[FirmVault AI] Supabase ${context} failed, using mock fallback.`,
       err,
     );
-    return typeof mockValue === "function"
-      ? await (mockValue as () => T | Promise<T>)()
-      : mockValue;
+    return resolveMock();
   }
 }

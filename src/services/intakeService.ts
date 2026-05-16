@@ -90,7 +90,7 @@ export const intakeService = {
         if (error) throw error;
         return data as Intake;
       },
-      () => ({ id, ...(patch as Intake) }),
+      () => ({ ...(patch as Intake), id }),
       "intakes.update",
     );
   },

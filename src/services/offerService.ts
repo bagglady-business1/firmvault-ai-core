@@ -74,7 +74,7 @@ export const offerService = {
         if (error) throw error;
         return data as OfferRecord;
       },
-      () => ({ id, ...(patch as OfferRecord) }),
+      () => ({ ...(patch as OfferRecord), id }),
       "offers.update",
     );
   },

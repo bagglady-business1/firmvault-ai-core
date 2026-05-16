@@ -76,7 +76,7 @@ export const taskService = {
         if (error) throw error;
         return data as TaskRecord;
       },
-      () => ({ id, ...(patch as TaskRecord) }),
+      () => ({ ...(patch as TaskRecord), id }),
       "tasks.update",
     );
   },

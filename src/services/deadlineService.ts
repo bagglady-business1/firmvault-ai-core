@@ -74,7 +74,7 @@ export const deadlineService = {
         if (error) throw error;
         return data as DeadlineRecord;
       },
-      () => ({ id, ...(patch as DeadlineRecord) }),
+      () => ({ ...(patch as DeadlineRecord), id }),
       "deadlines.update",
     );
   },

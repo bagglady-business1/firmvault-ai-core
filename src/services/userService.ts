@@ -119,7 +119,7 @@ export const userService = {
         if (error) throw error;
         return data as UserProfile;
       },
-      () => ({ id, ...(patch as UserProfile) }),
+      () => ({ ...(patch as UserProfile), id }),
       "users.update",
     );
   },

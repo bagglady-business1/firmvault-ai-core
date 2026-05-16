@@ -76,7 +76,7 @@ export const documentService = {
         if (error) throw error;
         return data as DocumentRecord;
       },
-      () => ({ id, ...(patch as DocumentRecord) }),
+      () => ({ ...(patch as DocumentRecord), id }),
       "documents.update",
     );
   },

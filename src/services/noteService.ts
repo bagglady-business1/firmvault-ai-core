@@ -77,7 +77,7 @@ export const noteService = {
         if (error) throw error;
         return data as NoteRecord;
       },
-      () => ({ id, ...(patch as NoteRecord) }),
+      () => ({ ...(patch as NoteRecord), id }),
       "notes.update",
     );
   },

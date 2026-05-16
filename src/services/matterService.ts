@@ -98,7 +98,7 @@ export const matterService = {
         if (error) throw error;
         return data as Matter;
       },
-      () => ({ id, ...(patch as Matter) }),
+      () => ({ ...(patch as Matter), id }),
       "matters.update",
     );
   },
