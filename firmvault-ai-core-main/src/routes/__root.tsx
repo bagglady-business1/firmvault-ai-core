@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -8,6 +9,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 
+import { testConnection } from "../test/supabaseTest";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -113,6 +115,10 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    testConnection();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

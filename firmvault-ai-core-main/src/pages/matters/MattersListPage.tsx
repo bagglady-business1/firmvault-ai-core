@@ -1,46 +1,114 @@
+// src/pages/matters/MattersListPage.tsx
+
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { AppShell, PageHeader } from "@/components/layout/AppShell";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { mockMatters } from "@/lib/mock-data";
-
-type M = (typeof mockMatters)[number];
+import { matterService, type MatterRecord } from "@/services/matterService";
 
 export function MattersListPage() {
-  const columns: Column<M>[] = [
-    { key: "id", header: "ID", render: (r) => <span className="font-mono text-xs text-muted-foreground">{r.id}</span> },
+  const [matters, setMatters] = useState<MatterRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadMatters() {
+      try {
+        const data = await matterService.getAll();
+        setMatters(data);
+      } catch (error) {
+        console.error("Failed to load matters:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadMatters();
+  }, []);
+
+  const columns: Column<MatterRecord>[] = [
     {
-      key: "title",
+      key: "id",
+      header: "ID",
+      render: (r) => (
+        <span className="font-mono text-xs text-muted-foreground">{r.id}</span>
+      ),
+    },
+    {
+      key: "matter_name",
       header: "Matter",
       render: (r) => (
-        <Link to="/matters/$id" params={{ id: r.id }} className="font-medium text-foreground hover:text-primary">
-          {r.title}
-          <p className="text-xs font-normal text-muted-foreground">{r.client}</p>
+        <Link
+          to="/matters/$id/timeline"
+          params={{ id: r.id }}
+          className="font-medium text-foreground hover:text-primary"
+        >
+          {r.matter_name || "Untitled Matter"}
+          <p className="text-xs font-normal text-muted-foreground">
+            {r.client_name || "Client not listed"}
+          </p>
         </Link>
       ),
     },
-    { key: "stage", header: "Stage", render: (r) => <span className="text-muted-foreground">{r.stage}</span> },
-    { key: "lead", header: "Lead", render: (r) => <span className="text-muted-foreground">{r.lead}</span> },
     {
-      key: "status",
-      header: "Status",
+      key: "case_type",
+      header: "Case Type",
       render: (r) => (
-        <StatusBadge
-          label={r.status}
-          tone={r.status === "urgent" ? "danger" : r.status === "review" ? "warning" : "success"}
-        />
+        <span className="text-muted-foreground">
+          {r.case_type || "General"}
+        </span>
       ),
     },
-    { key: "updated", header: "Updated", render: (r) => <span className="text-xs text-muted-foreground">{r.updated}</span> },
+    {
+      key: "matter_status",
+      header: "Status",
+      render: (r) => {
+        const status = r.matter_status || "active";
+
+        return (
+          <StatusBadge
+            label={status}
+            tone={
+              status === "urgent"
+                ? "danger"
+                : status === "review"
+                  ? "warning"
+                  : "success"
+            }
+          />
+        );
+      },
+    },
+    {
+      key: "created_at",
+      header: "Created",
+      render: (r) => (
+        <span className="text-xs text-muted-foreground">
+          {r.created_at ? new Date(r.created_at).toLocaleDateString() : "Not listed"}
+        </span>
+      ),
+    },
   ];
+
   return (
     <AppShell>
       <PageHeader
         title="Matters"
         description="All active, pending, and archived matters across the firm."
-        actions={<button className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground glow-primary">New Matter</button>}
+        actions={
+          <button className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground glow-primary">
+            New Matter
+          </button>
+        }
       />
-      <DataTable columns={columns} rows={mockMatters} />
+
+      {loading ? (
+        <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
+          Loading matters...
+        </div>
+      ) : (
+        <DataTable columns={columns} rows={matters} />
+      )}
     </AppShell>
   );
 }

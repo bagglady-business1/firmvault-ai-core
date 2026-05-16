@@ -1,93 +1,93 @@
-/**
- * FirmVault AI — Deadline Service
- * ---------------------------------------------------------------
- * Suggested Supabase schema:
- *
- *   create table public.deadlines (
- *     id uuid primary key default gen_random_uuid(),
- *     firm_id uuid not null references public.firms(id) on delete cascade,
- *     matter_id uuid not null references public.matters(id) on delete cascade,
- *     title text not null,
- *     description text,
- *     due_at timestamptz not null,
- *     priority text not null default 'medium',
- *     jurisdiction_rule text,
- *     satisfied_at timestamptz,
- *     created_at timestamptz not null default now(),
- *     updated_at timestamptz not null default now()
- *   );
- */
+// src/services/deadlineService.ts
 
 import { supabase } from "@/lib/supabaseClient";
-import { withFallback } from "@/utils/dataSource";
-import { mockDeadlines } from "@/lib/mock-data";
-import type { DeadlineRecord } from "@/types";
+import { activityService } from "@/services/activityService";
 
 const TABLE = "deadlines";
 
+export type DeadlineRecord = {
+  id: string;
+  firm_id?: string | null;
+  matter_id?: string | null;
+  title: string;
+  deadline_date: string;
+  status?: string | null;
+  notes?: string | null;
+  created_at?: string;
+};
+
 export const deadlineService = {
-  async getAll(filters?: { matterId?: string }) {
-    return withFallback(
-      async () => {
-        let q = supabase!.from(TABLE).select("*").order("due_at", { ascending: true });
-        if (filters?.matterId) q = q.eq("matter_id", filters.matterId);
-        const { data, error } = await q;
-        if (error) throw error;
-        return data as DeadlineRecord[];
-      },
-      mockDeadlines,
-      "deadlines.getAll",
-    );
+  async getAll(filters?: { matterId?: string }): Promise<DeadlineRecord[]> {
+    let query = supabase
+      .from(TABLE)
+      .select("*")
+      .order("deadline_date", { ascending: true });
+
+    if (filters?.matterId) {
+      query = query.eq("matter_id", filters.matterId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error loading deadlines:", error);
+      return [];
+    }
+
+    return (data ?? []) as DeadlineRecord[];
   },
 
-  async getById(id: string) {
-    return withFallback(
-      async () => {
-        const { data, error } = await supabase!
-          .from(TABLE).select("*").eq("id", id).maybeSingle();
-        if (error) throw error;
-        return data as DeadlineRecord | null;
-      },
-      () => mockDeadlines.find((d) => d.id === id) ?? null,
-      "deadlines.getById",
-    );
+  async create(payload: Partial<DeadlineRecord>): Promise<DeadlineRecord | null> {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating deadline:", error);
+      return null;
+    }
+
+    const deadline = data as DeadlineRecord;
+
+    if (deadline.matter_id) {
+      await activityService.logMatterActivity(
+        deadline.matter_id,
+        `Deadline added: ${deadline.title}`,
+      );
+    }
+
+    return deadline;
   },
 
-  async create(payload: Partial<DeadlineRecord>) {
-    return withFallback(
-      async () => {
-        const { data, error } = await supabase!
-          .from(TABLE).insert(payload).select().single();
-        if (error) throw error;
-        return data as DeadlineRecord;
-      },
-      () => ({ ...(payload as DeadlineRecord) }),
-      "deadlines.create",
-    );
-  },
+  async update(
+    id: string,
+    patch: Partial<DeadlineRecord>,
+  ): Promise<DeadlineRecord | null> {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .update(patch)
+      .eq("id", id)
+      .select()
+      .single();
 
-  async update(id: string, patch: Partial<DeadlineRecord>) {
-    return withFallback(
-      async () => {
-        const { data, error } = await supabase!
-          .from(TABLE).update(patch).eq("id", id).select().single();
-        if (error) throw error;
-        return data as DeadlineRecord;
-      },
-      () => ({ ...(patch as DeadlineRecord), id }),
-      "deadlines.update",
-    );
-  },
+    if (error) {
+      console.error("Error updating deadline:", error);
+      return null;
+    }
 
-  async remove(id: string) {
-    return withFallback(
-      async () => {
-        const { error } = await supabase!.from(TABLE).delete().eq("id", id);
-        if (error) throw error;
-        return { id };
-      },
-      { id },
-      "deadlines.remove",
-    );
+    const deadline = data as DeadlineRecord;
+
+    if (deadline.matter_id) {
+      await activityService.logMatterActivity(
+        deadline.matter_id,
+        patch.status === "completed"
+          ? `Deadline completed: ${deadline.title}`
+          : `Deadline updated: ${deadline.title}`,
+      );
+    }
+
+    return deadline;
   },
 };

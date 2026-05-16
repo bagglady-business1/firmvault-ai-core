@@ -1,109 +1,96 @@
-/**
- * FirmVault AI — Intake Service
- * ---------------------------------------------------------------
- * Suggested Supabase schema (apply later via migration):
- *
- *   create table public.intakes (
- *     id uuid primary key default gen_random_uuid(),
- *     firm_id uuid not null references public.firms(id) on delete cascade,
- *     client_name text not null,
- *     client_email text,
- *     client_phone text,
- *     matter_type text not null,
- *     jurisdiction text,
- *     source text not null check (source in ('web_form','phone','email','referral','walk_in')),
- *     risk text not null check (risk in ('low','medium','high','critical')) default 'low',
- *     status text not null check (status in ('new','in_review','conflict_check','qualified','converted','declined')) default 'new',
- *     ai_summary text,
- *     assigned_to uuid references public.user_profiles(id),
- *     received_at timestamptz not null default now(),
- *     created_at timestamptz not null default now(),
- *     updated_at timestamptz not null default now()
- *   );
- *   -- RLS: enable + policy "firm members read/write own firm".
- */
+// src/services/intakeService.ts
 
 import { supabase } from "@/lib/supabaseClient";
-import { withFallback } from "@/utils/dataSource";
-import { mockIntakes } from "@/lib/mock-data";
-import type { Intake } from "@/types";
 
 const TABLE = "intakes";
 
+export type IntakeRecord = {
+  id: string;
+  firm_id?: string | null;
+  client_name: string;
+  client_email?: string | null;
+  client_phone?: string | null;
+  case_type?: string | null;
+  intake_status?: string | null;
+  summary?: string | null;
+  ai_summary?: string | null;
+  ai_risk_level?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
 export const intakeService = {
-  async getAll() {
-    return withFallback<Intake[] | typeof mockIntakes>(
-      async () => {
-        const { data, error } = await supabase!
-          .from(TABLE)
-          .select("*")
-          .order("received_at", { ascending: false });
-        if (error) throw error;
-        return data as Intake[];
-      },
-      mockIntakes,
-      "intakes.getAll",
-    );
+  async getAll(): Promise<IntakeRecord[]> {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error loading intakes:", error);
+      return [];
+    }
+
+    return (data ?? []) as IntakeRecord[];
   },
 
-  async getById(id: string) {
-    return withFallback(
-      async () => {
-        const { data, error } = await supabase!
-          .from(TABLE)
-          .select("*")
-          .eq("id", id)
-          .maybeSingle();
-        if (error) throw error;
-        return data as Intake | null;
-      },
-      () => mockIntakes.find((i) => i.id === id) ?? null,
-      "intakes.getById",
-    );
+  async getById(id: string): Promise<IntakeRecord | null> {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error loading intake:", error);
+      return null;
+    }
+
+    return data as IntakeRecord | null;
   },
 
-  async create(payload: Partial<Intake>) {
-    return withFallback(
-      async () => {
-        const { data, error } = await supabase!
-          .from(TABLE)
-          .insert(payload)
-          .select()
-          .single();
-        if (error) throw error;
-        return data as Intake;
-      },
-      () => ({ ...(payload as Intake) }),
-      "intakes.create",
-    );
+  async create(payload: Partial<IntakeRecord>): Promise<IntakeRecord | null> {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating intake:", error);
+      return null;
+    }
+
+    return data as IntakeRecord;
   },
 
-  async update(id: string, patch: Partial<Intake>) {
-    return withFallback(
-      async () => {
-        const { data, error } = await supabase!
-          .from(TABLE)
-          .update(patch)
-          .eq("id", id)
-          .select()
-          .single();
-        if (error) throw error;
-        return data as Intake;
-      },
-      () => ({ ...(patch as Intake), id }),
-      "intakes.update",
-    );
+  async update(
+    id: string,
+    patch: Partial<IntakeRecord>,
+  ): Promise<IntakeRecord | null> {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .update(patch)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating intake:", error);
+      return null;
+    }
+
+    return data as IntakeRecord;
   },
 
-  async remove(id: string) {
-    return withFallback(
-      async () => {
-        const { error } = await supabase!.from(TABLE).delete().eq("id", id);
-        if (error) throw error;
-        return { id };
-      },
-      { id },
-      "intakes.remove",
-    );
+  async remove(id: string): Promise<{ id: string } | null> {
+    const { error } = await supabase.from(TABLE).delete().eq("id", id);
+
+    if (error) {
+      console.error("Error deleting intake:", error);
+      return null;
+    }
+
+    return { id };
   },
 };

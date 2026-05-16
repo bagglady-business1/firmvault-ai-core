@@ -18,10 +18,15 @@ import { Route as DocumentsRouteImport } from './routes/documents'
 import { Route as DeadlinesRouteImport } from './routes/deadlines'
 import { Route as CommandCenterRouteImport } from './routes/command-center'
 import { Route as AiReviewRouteImport } from './routes/ai-review'
+import { Route as AiRouteImport } from './routes/ai'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MattersIndexRouteImport } from './routes/matters.index'
 import { Route as IntakeIndexRouteImport } from './routes/intake.index'
 import { Route as MattersIdRouteImport } from './routes/matters.$id'
+import { Route as AiMatterReviewRouteImport } from './routes/ai.matter-review'
+import { Route as AiIntakeReviewRouteImport } from './routes/ai.intake-review'
+import { Route as AiDocumentReviewRouteImport } from './routes/ai.document-review'
+import { Route as AiDeadlinesRouteImport } from './routes/ai.deadlines'
 import { Route as MattersIdIndexRouteImport } from './routes/matters.$id.index'
 import { Route as IntakeIdIndexRouteImport } from './routes/intake.$id.index'
 import { Route as MattersIdTimelineRouteImport } from './routes/matters.$id.timeline'
@@ -77,6 +82,11 @@ const AiReviewRoute = AiReviewRouteImport.update({
   path: '/ai-review',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AiRoute = AiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -96,6 +106,26 @@ const MattersIdRoute = MattersIdRouteImport.update({
   id: '/matters/$id',
   path: '/matters/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AiMatterReviewRoute = AiMatterReviewRouteImport.update({
+  id: '/matter-review',
+  path: '/matter-review',
+  getParentRoute: () => AiRoute,
+} as any)
+const AiIntakeReviewRoute = AiIntakeReviewRouteImport.update({
+  id: '/intake-review',
+  path: '/intake-review',
+  getParentRoute: () => AiRoute,
+} as any)
+const AiDocumentReviewRoute = AiDocumentReviewRouteImport.update({
+  id: '/document-review',
+  path: '/document-review',
+  getParentRoute: () => AiRoute,
+} as any)
+const AiDeadlinesRoute = AiDeadlinesRouteImport.update({
+  id: '/deadlines',
+  path: '/deadlines',
+  getParentRoute: () => AiRoute,
 } as any)
 const MattersIdIndexRoute = MattersIdIndexRouteImport.update({
   id: '/',
@@ -145,6 +175,7 @@ const IntakeIdAiReviewRoute = IntakeIdAiReviewRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ai': typeof AiRouteWithChildren
   '/ai-review': typeof AiReviewRoute
   '/command-center': typeof CommandCenterRoute
   '/deadlines': typeof DeadlinesRoute
@@ -154,6 +185,10 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/setup': typeof SetupRoute
   '/tasks': typeof TasksRoute
+  '/ai/deadlines': typeof AiDeadlinesRoute
+  '/ai/document-review': typeof AiDocumentReviewRoute
+  '/ai/intake-review': typeof AiIntakeReviewRoute
+  '/ai/matter-review': typeof AiMatterReviewRoute
   '/matters/$id': typeof MattersIdRouteWithChildren
   '/intake/': typeof IntakeIndexRoute
   '/matters/': typeof MattersIndexRoute
@@ -169,6 +204,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ai': typeof AiRouteWithChildren
   '/ai-review': typeof AiReviewRoute
   '/command-center': typeof CommandCenterRoute
   '/deadlines': typeof DeadlinesRoute
@@ -178,6 +214,10 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/setup': typeof SetupRoute
   '/tasks': typeof TasksRoute
+  '/ai/deadlines': typeof AiDeadlinesRoute
+  '/ai/document-review': typeof AiDocumentReviewRoute
+  '/ai/intake-review': typeof AiIntakeReviewRoute
+  '/ai/matter-review': typeof AiMatterReviewRoute
   '/intake': typeof IntakeIndexRoute
   '/matters': typeof MattersIndexRoute
   '/intake/$id/ai-review': typeof IntakeIdAiReviewRoute
@@ -193,6 +233,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ai': typeof AiRouteWithChildren
   '/ai-review': typeof AiReviewRoute
   '/command-center': typeof CommandCenterRoute
   '/deadlines': typeof DeadlinesRoute
@@ -202,6 +243,10 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/setup': typeof SetupRoute
   '/tasks': typeof TasksRoute
+  '/ai/deadlines': typeof AiDeadlinesRoute
+  '/ai/document-review': typeof AiDocumentReviewRoute
+  '/ai/intake-review': typeof AiIntakeReviewRoute
+  '/ai/matter-review': typeof AiMatterReviewRoute
   '/matters/$id': typeof MattersIdRouteWithChildren
   '/intake/': typeof IntakeIndexRoute
   '/matters/': typeof MattersIndexRoute
@@ -219,6 +264,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/ai'
     | '/ai-review'
     | '/command-center'
     | '/deadlines'
@@ -228,6 +274,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/setup'
     | '/tasks'
+    | '/ai/deadlines'
+    | '/ai/document-review'
+    | '/ai/intake-review'
+    | '/ai/matter-review'
     | '/matters/$id'
     | '/intake/'
     | '/matters/'
@@ -243,6 +293,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/ai'
     | '/ai-review'
     | '/command-center'
     | '/deadlines'
@@ -252,6 +303,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/setup'
     | '/tasks'
+    | '/ai/deadlines'
+    | '/ai/document-review'
+    | '/ai/intake-review'
+    | '/ai/matter-review'
     | '/intake'
     | '/matters'
     | '/intake/$id/ai-review'
@@ -266,6 +321,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/ai'
     | '/ai-review'
     | '/command-center'
     | '/deadlines'
@@ -275,6 +331,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/setup'
     | '/tasks'
+    | '/ai/deadlines'
+    | '/ai/document-review'
+    | '/ai/intake-review'
+    | '/ai/matter-review'
     | '/matters/$id'
     | '/intake/'
     | '/matters/'
@@ -291,6 +351,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AiRoute: typeof AiRouteWithChildren
   AiReviewRoute: typeof AiReviewRoute
   CommandCenterRoute: typeof CommandCenterRoute
   DeadlinesRoute: typeof DeadlinesRoute
@@ -372,6 +433,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AiReviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ai': {
+      id: '/ai'
+      path: '/ai'
+      fullPath: '/ai'
+      preLoaderRoute: typeof AiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -399,6 +467,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/matters/$id'
       preLoaderRoute: typeof MattersIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/ai/matter-review': {
+      id: '/ai/matter-review'
+      path: '/matter-review'
+      fullPath: '/ai/matter-review'
+      preLoaderRoute: typeof AiMatterReviewRouteImport
+      parentRoute: typeof AiRoute
+    }
+    '/ai/intake-review': {
+      id: '/ai/intake-review'
+      path: '/intake-review'
+      fullPath: '/ai/intake-review'
+      preLoaderRoute: typeof AiIntakeReviewRouteImport
+      parentRoute: typeof AiRoute
+    }
+    '/ai/document-review': {
+      id: '/ai/document-review'
+      path: '/document-review'
+      fullPath: '/ai/document-review'
+      preLoaderRoute: typeof AiDocumentReviewRouteImport
+      parentRoute: typeof AiRoute
+    }
+    '/ai/deadlines': {
+      id: '/ai/deadlines'
+      path: '/deadlines'
+      fullPath: '/ai/deadlines'
+      preLoaderRoute: typeof AiDeadlinesRouteImport
+      parentRoute: typeof AiRoute
     }
     '/matters/$id/': {
       id: '/matters/$id/'
@@ -466,6 +562,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AiRouteChildren {
+  AiDeadlinesRoute: typeof AiDeadlinesRoute
+  AiDocumentReviewRoute: typeof AiDocumentReviewRoute
+  AiIntakeReviewRoute: typeof AiIntakeReviewRoute
+  AiMatterReviewRoute: typeof AiMatterReviewRoute
+}
+
+const AiRouteChildren: AiRouteChildren = {
+  AiDeadlinesRoute: AiDeadlinesRoute,
+  AiDocumentReviewRoute: AiDocumentReviewRoute,
+  AiIntakeReviewRoute: AiIntakeReviewRoute,
+  AiMatterReviewRoute: AiMatterReviewRoute,
+}
+
+const AiRouteWithChildren = AiRoute._addFileChildren(AiRouteChildren)
+
 interface MattersIdRouteChildren {
   MattersIdDeadlinesRoute: typeof MattersIdDeadlinesRoute
   MattersIdDocumentsRoute: typeof MattersIdDocumentsRoute
@@ -492,6 +604,7 @@ const MattersIdRouteWithChildren = MattersIdRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AiRoute: AiRouteWithChildren,
   AiReviewRoute: AiReviewRoute,
   CommandCenterRoute: CommandCenterRoute,
   DeadlinesRoute: DeadlinesRoute,
@@ -510,3 +623,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

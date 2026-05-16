@@ -1,117 +1,104 @@
-/**
- * FirmVault AI — Matter Service
- * ---------------------------------------------------------------
- * Suggested Supabase schema:
- *
- *   create table public.matters (
- *     id uuid primary key default gen_random_uuid(),
- *     firm_id uuid not null references public.firms(id) on delete cascade,
- *     reference text not null unique,
- *     title text not null,
- *     client_name text not null,
- *     practice_area text not null,
- *     stage text not null,
- *     status text not null default 'active',
- *     lead_attorney_id uuid references public.user_profiles(id),
- *     opened_at timestamptz not null default now(),
- *     closed_at timestamptz,
- *     summary text,
- *     created_at timestamptz not null default now(),
- *     updated_at timestamptz not null default now()
- *   );
- *
- *   create table public.matter_team_members (
- *     id uuid primary key default gen_random_uuid(),
- *     matter_id uuid not null references public.matters(id) on delete cascade,
- *     user_id uuid not null references public.user_profiles(id) on delete cascade,
- *     role text not null,
- *     created_at timestamptz not null default now(),
- *     unique (matter_id, user_id)
- *   );
- *   -- RLS: only firm members assigned to matter may read/write.
- */
+// src/services/matterService.ts
 
 import { supabase } from "@/lib/supabaseClient";
-import { withFallback } from "@/utils/dataSource";
-import { mockMatters } from "@/lib/mock-data";
-import type { Matter } from "@/types";
+import { activityService } from "@/services/activityService";
 
 const TABLE = "matters";
 
+export type MatterRecord = {
+  id: string;
+  firm_id?: string | null;
+  intake_id?: string | null;
+  matter_name: string;
+  client_name?: string | null;
+  case_type?: string | null;
+  matter_status?: string | null;
+  description?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
 export const matterService = {
-  async getAll() {
-    return withFallback(
-      async () => {
-        const { data, error } = await supabase!
-          .from(TABLE)
-          .select("*")
-          .order("updated_at", { ascending: false });
-        if (error) throw error;
-        return data as Matter[];
-      },
-      mockMatters,
-      "matters.getAll",
-    );
+  async getAll(): Promise<MatterRecord[]> {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error loading matters:", error);
+      return [];
+    }
+
+    return (data ?? []) as MatterRecord[];
   },
 
-  async getById(id: string) {
-    return withFallback(
-      async () => {
-        const { data, error } = await supabase!
-          .from(TABLE)
-          .select("*")
-          .eq("id", id)
-          .maybeSingle();
-        if (error) throw error;
-        return data as Matter | null;
-      },
-      () => mockMatters.find((m) => m.id === id) ?? null,
-      "matters.getById",
-    );
+  async getById(id: string): Promise<MatterRecord | null> {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error loading matter:", error);
+      return null;
+    }
+
+    return data as MatterRecord | null;
   },
 
-  async create(payload: Partial<Matter>) {
-    return withFallback(
-      async () => {
-        const { data, error } = await supabase!
-          .from(TABLE)
-          .insert(payload)
-          .select()
-          .single();
-        if (error) throw error;
-        return data as Matter;
-      },
-      () => ({ ...(payload as Matter) }),
-      "matters.create",
+  async create(payload: Partial<MatterRecord>): Promise<MatterRecord | null> {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating matter:", error);
+      return null;
+    }
+
+    const matter = data as MatterRecord;
+
+    await activityService.logMatterActivity(
+      matter.id,
+      `Matter created: ${matter.matter_name || "Untitled Matter"}`,
     );
+
+    return matter;
   },
 
-  async update(id: string, patch: Partial<Matter>) {
-    return withFallback(
-      async () => {
-        const { data, error } = await supabase!
-          .from(TABLE)
-          .update(patch)
-          .eq("id", id)
-          .select()
-          .single();
-        if (error) throw error;
-        return data as Matter;
-      },
-      () => ({ ...(patch as Matter), id }),
-      "matters.update",
-    );
+  async update(
+    id: string,
+    patch: Partial<MatterRecord>,
+  ): Promise<MatterRecord | null> {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .update(patch)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating matter:", error);
+      return null;
+    }
+
+    await activityService.logMatterActivity(id, "Matter updated");
+
+    return data as MatterRecord;
   },
 
-  async remove(id: string) {
-    return withFallback(
-      async () => {
-        const { error } = await supabase!.from(TABLE).delete().eq("id", id);
-        if (error) throw error;
-        return { id };
-      },
-      { id },
-      "matters.remove",
-    );
+  async remove(id: string): Promise<{ id: string } | null> {
+    const { error } = await supabase.from(TABLE).delete().eq("id", id);
+
+    if (error) {
+      console.error("Error deleting matter:", error);
+      return null;
+    }
+
+    return { id };
   },
 };

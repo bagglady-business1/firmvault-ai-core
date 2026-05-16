@@ -1,93 +1,91 @@
-/**
- * FirmVault AI — Offer & Negotiation Service
- * ---------------------------------------------------------------
- * Suggested Supabase schema:
- *
- *   create table public.offers (
- *     id uuid primary key default gen_random_uuid(),
- *     firm_id uuid not null references public.firms(id) on delete cascade,
- *     matter_id uuid not null references public.matters(id) on delete cascade,
- *     party text not null,
- *     amount_cents bigint not null,
- *     currency text not null default 'USD',
- *     status text not null default 'pending',
- *     terms text,
- *     proposed_by uuid not null references public.user_profiles(id),
- *     created_at timestamptz not null default now(),
- *     updated_at timestamptz not null default now()
- *   );
- */
+// src/services/offerService.ts
 
 import { supabase } from "@/lib/supabaseClient";
-import { withFallback } from "@/utils/dataSource";
-import { mockOffers } from "@/lib/mock-data";
-import type { OfferRecord } from "@/types";
+import { activityService } from "@/services/activityService";
 
 const TABLE = "offers";
 
+export type OfferRecord = {
+  id: string;
+  firm_id?: string | null;
+  matter_id?: string | null;
+  offer_title?: string | null;
+  offer_amount?: number | null;
+  offer_status?: string | null;
+  notes?: string | null;
+  created_at?: string;
+};
+
 export const offerService = {
-  async getAll(filters?: { matterId?: string }) {
-    return withFallback(
-      async () => {
-        let q = supabase!.from(TABLE).select("*").order("updated_at", { ascending: false });
-        if (filters?.matterId) q = q.eq("matter_id", filters.matterId);
-        const { data, error } = await q;
-        if (error) throw error;
-        return data as OfferRecord[];
-      },
-      mockOffers,
-      "offers.getAll",
-    );
+  async getAll(filters?: { matterId?: string }): Promise<OfferRecord[]> {
+    let query = supabase
+      .from(TABLE)
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (filters?.matterId) {
+      query = query.eq("matter_id", filters.matterId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error loading offers:", error);
+      return [];
+    }
+
+    return (data ?? []) as OfferRecord[];
   },
 
-  async getById(id: string) {
-    return withFallback(
-      async () => {
-        const { data, error } = await supabase!
-          .from(TABLE).select("*").eq("id", id).maybeSingle();
-        if (error) throw error;
-        return data as OfferRecord | null;
-      },
-      () => mockOffers.find((o) => o.id === id) ?? null,
-      "offers.getById",
-    );
+  async create(payload: Partial<OfferRecord>): Promise<OfferRecord | null> {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating offer:", error);
+      return null;
+    }
+
+    const offer = data as OfferRecord;
+
+    if (offer.matter_id) {
+      await activityService.logMatterActivity(
+        offer.matter_id,
+        `Offer added: ${offer.offer_title || "Untitled offer"}`,
+      );
+    }
+
+    return offer;
   },
 
-  async create(payload: Partial<OfferRecord>) {
-    return withFallback(
-      async () => {
-        const { data, error } = await supabase!
-          .from(TABLE).insert(payload).select().single();
-        if (error) throw error;
-        return data as OfferRecord;
-      },
-      () => ({ ...(payload as OfferRecord) }),
-      "offers.create",
-    );
-  },
+  async update(
+    id: string,
+    patch: Partial<OfferRecord>,
+  ): Promise<OfferRecord | null> {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .update(patch)
+      .eq("id", id)
+      .select()
+      .single();
 
-  async update(id: string, patch: Partial<OfferRecord>) {
-    return withFallback(
-      async () => {
-        const { data, error } = await supabase!
-          .from(TABLE).update(patch).eq("id", id).select().single();
-        if (error) throw error;
-        return data as OfferRecord;
-      },
-      () => ({ ...(patch as OfferRecord), id }),
-      "offers.update",
-    );
-  },
+    if (error) {
+      console.error("Error updating offer:", error);
+      return null;
+    }
 
-  async remove(id: string) {
-    return withFallback(
-      async () => {
-        const { error } = await supabase!.from(TABLE).delete().eq("id", id);
-        if (error) throw error;
-        return { id };
-      },
-      { id },
-      "offers.remove",
-    );
+    const offer = data as OfferRecord;
+
+    if (offer.matter_id) {
+      await activityService.logMatterActivity(
+        offer.matter_id,
+        `Offer updated: ${offer.offer_title || "Untitled offer"}`,
+      );
+    }
+
+    return offer;
   },
 };
